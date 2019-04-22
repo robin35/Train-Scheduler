@@ -16,15 +16,17 @@ firebase.initializeApp(config);
 var firebaseData = firebase.database();
 
 
+
 // =========================================================================================================================
 // Global Variables
 // =========================================================================================================================
 
 // Schedule variables
-var gTrainName = "";
-var gDestination = "";
-var gFirstTrainTime = 0;
-var gFrequency = 0;
+var gTrainName;
+var gDestination;
+var gFirstTrainTime;
+var gFrequency;
+var gLastTrainTime;
 
 var train = [];
 
@@ -32,22 +34,16 @@ var train = [];
 var dbRecordCount = 0;
 
 // Time variables
-var cTime = 0;
-var cTotal = 0;
-var fTotal = 0;
-var fHoursToMinutes = 0;
-var nextArrivalTime = 0;
-var minutesAway = 0;
+var nextArrivalTime;
+var minutesAway;
 
-
+var cTime;
 
 
 
 // =========================================================================================================================
-// PUSH DATA TO FIREBASE REALTIME DATABASE
+// SUBMIT BUTTON CLICKED: PUSH DATA TO FIREBASE REALTIME DATABASE
 // =========================================================================================================================
-
-// Event: Submit Button Clicked
  
 $(".btn-primary").on("click", function(event) {
   event.preventDefault();
@@ -59,6 +55,7 @@ $(".btn-primary").on("click", function(event) {
   var destination = $("#formGroupDestination").val().trim();
   var firstTrainTime = $("#formGroupFirstTrainTime").val().trim();
   var frequency = $("#formGroupFrequency").val().trim();
+  var lastTrainTime = $("#formGroupLastTrainTime").val().trim();
   
   // Push user input to firebase database
   firebaseData.ref().push({
@@ -66,97 +63,10 @@ $(".btn-primary").on("click", function(event) {
       destination: destination,
       firstTrainTime: firstTrainTime,
       frequency: frequency,
+      lastTrainTime: lastTrainTime,
       dateAdded: firebase.database.ServerValue.TIMESTAMP
   });
 });
-
-
-
-
-
-
-// =========================================================================================================================
-// Function: Parse First Train Time into Hours/Minutes using sustr()
-// =========================================================================================================================
-
-firstTrainToMinutes = function () {
-  var fHours = 0;
-  var fMinutes = 0;
-
-  fHours = gFirstTrainTime.substr(0, 2);
-  fMinutes = gFirstTrainTime.substr(3, 2);
-  fHoursToMinutes = fHours * 60;
-  fTotal = +fHoursToMinutes + +fMinutes;
-
-  console.log("fHours:", fHours);
-  console.log("fMinutes:", fMinutes);
-  console.log("fHoursToMinutes:", fHoursToMinutes);
-  console.log("fTotal:", fTotal);
-
-}
-
-
-
-// =========================================================================================================================
-// Function: Parse Current Time into Hours/Minutes using Moment.js
-// =========================================================================================================================
-
-currentTimeToMinutes = function () {
-
-var currentTimeMilitary = moment();
-var cTime = moment(currentTimeMilitary).format("HH:mm");
-
-var cHours = 0;
-var cMinutes = 0;
-var cHoursToMinutes = 0;
-
-cHours = currentTimeMilitary.hours();
-cMinutes = currentTimeMilitary.minutes();
-cHoursToMinutes = cHours * 60;
-cTotal = +cHoursToMinutes + +cMinutes;
-
-console.log("cHours:", cHours);
-console.log("cMinutes:", cMinutes);
-console.log("cHoursToMinutes:", cHoursToMinutes);
-console.log("cTotal:", cTotal);
-
-// Current Time to UI
-$(".currentTime").html("<p>Current Time: "+cTime+"</p>");
-
-
-
-}
-
-
-// =========================================================================================================================
-// Function: Calculate Next Arrival Time and Minutes Away
-// =========================================================================================================================
-
-nextArrivalCalculation = function () {
-
-  var minutesSinceFirst = cTotal - fTotal;
-  var numberTrainRuns = Math.floor(minutesSinceFirst / gFrequency) + 1; // add 1 for next train
-  var minutesSinceFirstToNext = numberTrainRuns * gFrequency;
-  
-  minutesAway = minutesSinceFirstToNext - minutesSinceFirst;
-  
-  console.log("minutesSinceFirst:",minutesSinceFirst);
-  console.log("numberTrainRuns:",numberTrainRuns);
-  console.log("minutesSinceFirstToNext:",minutesSinceFirstToNext);
-  console.log("minutesAway:",minutesAway);
-
-  var nextArrivalTimeHours = Math.floor( (+minutesSinceFirstToNext + +fHoursToMinutes)/60 ); 
-  var nextArrivalTimeMinutes = minutesSinceFirstToNext % 60; // modulus
-
-  nextArrivalTime = nextArrivalTimeHours+":"+nextArrivalTimeMinutes;
-
-  console.log("nextArrivalTimeHours:",nextArrivalTimeHours);
-  console.log("nextArrivalTimeMinutes:",nextArrivalTimeMinutes);
-  console.log("nextArrivalTime:",nextArrivalTime);
-
-  nextArrivalTime2 = moment(nextArrivalTime, 'HH:mm');
-  console.log("nextArrivalTime2:",nextArrivalTime2);
-}
 
 
 
@@ -166,26 +76,33 @@ nextArrivalCalculation = function () {
 
 firebaseData.ref().on("child_added", function(childSnapshot) {
 
-  console.log("There are "+childSnapshot.numChildren()+" fields in the DB.");
+  console.log("Number of records in Firebase: "+childSnapshot.numChildren());
 
   // Data from Firebase
   gTrainName = childSnapshot.val().trainName;
   gDestination = childSnapshot.val().destination;
   gFirstTrainTime = childSnapshot.val().firstTrainTime;
   gFrequency = childSnapshot.val().frequency;
-
-  firstTrainToMinutes();
-  currentTimeToMinutes();
+  
   nextArrivalCalculation();
 
   // Train information to UI
   $(".tableBody").append("<tr class='r"+dbRecordCount+"'>" +
-      "<td id='r"+dbRecordCount+"c"+1+"'>"+gTrainName+"</td>" +
-      "<td id='r"+dbRecordCount+"c"+2+"'>"+gDestination+"</td>" +
-      "<td id='r"+dbRecordCount+"c"+3+"'>"+gFrequency+"</td>" +
-      "<td id='r"+dbRecordCount+"c"+4+"'>"+nextArrivalTime+"</td>" +
-      "<td id='r"+dbRecordCount+"c"+5+"'>"+minutesAway+"</td>" +
-    "</tr>");
+      "<td id='r"+dbRecordCount+"c"+0+"'>"+gTrainName+"</td>" +
+      "<td id='r"+dbRecordCount+"c"+1+"'>"+gDestination+"</td>" +
+      "<td id='r"+dbRecordCount+"c"+2+"'>"+gFrequency+"</td>" +
+      "<td id='r"+dbRecordCount+"c"+3+"'>"+nextArrivalTime+"</td>" +
+      "<td id='r"+dbRecordCount+"c"+4+"'>"+minutesAway+"</td>" +
+
+      "<td id='r"+dbRecordCount+"c"+5+"'>"+
+        "<input type='button' class='actionBtn' id='eBtn_r"+dbRecordCount+"c"+5+"' onclick='editRow("+dbRecordCount+")' value='Edit'></td>" +
+
+      "<td id='r"+dbRecordCount+"c"+6+"'>"+
+        "<input type='button' class='actionBtn' id='sBtn_r"+dbRecordCount+"c"+6+"' onclick='saveRow("+dbRecordCount+")' value='Save'></td>" + 
+
+      "<td id='r"+dbRecordCount+"c"+7+"'>"+
+        "<input type='button' class='actionBtn' id='dBtn_r"+dbRecordCount+"c"+7+"' onclick='deleteRow("+dbRecordCount+")' value='Delete'></td>" +
+  "</tr>");
 
   train.push ({ record: dbRecordCount, 
                   trainName: gTrainName,
@@ -197,9 +114,7 @@ firebaseData.ref().on("child_added", function(childSnapshot) {
   });
 
   dbRecordCount++;
-
-  console.log("train: ", train);
-  
+ 
   // Error Handler
   }, function(errorObject) {
     console.log("firebase return error: " + errorObject.code);
@@ -208,56 +123,171 @@ firebaseData.ref().on("child_added", function(childSnapshot) {
 
 
 // =========================================================================================================================
-// UPDATE TIME DISPLAY
+// Function: Calculate Next Arrival Time and Minutes Away; Display current time using Moment.js
 // =========================================================================================================================
 
-var timer;
+nextArrivalCalculation = function () {
 
-var startTime = "00";
-var endTime = "24";
+  // Current time converted to milliseconds
+  var today = new Date();
+  cTime = today;
+  var cTimeMS = today.getTime();
 
-while(cHours >= startTime || cHours <= endTime) {
-  if(x > 23) {
-      x = 0;
+  // Parse first train time into hours / minutes
+  var fTimeParsed = gFirstTrainTime.split(":");  
+
+  // First train time converted to milliseconds
+  var fTrainTime = new Date();
+  fTrainTime.setHours(fTimeParsed[0]);
+  fTrainTime.setMinutes(fTimeParsed[1]);
+  fTrainTime.setSeconds(0);
+  fTime = fTrainTime;  
+  var fTimeMS = fTime.getTime();
+
+  // Calculate Next Arrival Time
+  var frequencyMS = 1000 * 60 * gFrequency;  // convert frequency to milliseconds
+  var totalRunTimeMS = cTimeMS - fTimeMS;  // calculate total train run time since first run (in milliseconds)
+  var numberTrainRuns = totalRunTimeMS / frequencyMS;  // calculate total number of train runs for the day
+  var numberTrainRunsRounded = Math.floor(numberTrainRuns) + 1; // round down number train runs; add 1 for next train
+  var nextTrainMS = (frequencyMS * numberTrainRunsRounded) + fTimeMS;  // calculate next train time in milliseconds
+  var nextArrivalDate = new Date(nextTrainMS);  // convert nextTrain to date format
+
+  // Convert nextArrivalDate to Time
+  var nextHours = nextArrivalDate.getHours();
+  var nextMinutes = nextArrivalDate.getMinutes();
+  
+  if(nextHours < 10) {
+    nextHours = '0' + nextHours;
   }
 
-
-function updateTime() {
+  if(nextMinutes < 10) {
+    nextMinutes = '0' + nextMinutes;
+  }
   
+  nextArrivalTime = nextHours + ":" + nextMinutes; // Next Arrival Time to be displayed in UI
+
+
+  // Calculate Minutes Away
+  var minutesAwayMS = nextTrainMS - cTimeMS; // calculate train minutes away in milliseconds
+  minutesAway = Math.round((minutesAwayMS / 1000) / 60);  // convert minutesAway from milliseconds to minutes
+
+
+/*
+  console.log("cTime:",cTime);
+  console.log("fTime:",fTime);
+  console.log("fTimeParsed:",fTimeParsed);
+  
+  console.log("cTimeMS:",cTimeMS);
+  console.log("fTimeMS:",fTimeMS);
+
+  console.log("totalRunTimeMS:",totalRunTimeMS);
+  console.log("numberTrainRuns:",numberTrainRuns);
+  console.log("numberTrainRunsRounded:",numberTrainRunsRounded);
+
+  console.log("nextTrainMS:",nextTrainMS);
+  console.log("nextArrivalTime:",nextArrivalTime);
+  console.log("minutesAwayMS:",minutesAwayMS);
+  console.log("minutesAway:",minutesAway);
+*/
+}
+
+
+
+// =========================================================================================================================
+// EDIT TABLE ROW
+// =========================================================================================================================
+
+editRow = function (num) {
+   
+  var eTrainName = document.getElementById("r"+num+"c0");
+  var eDestination = document.getElementById("r"+num+"c1");
+  var eFrequency = document.getElementById("r"+num+"c2");
+  
+  var eTrain = eTrainName.innerHTML;
+  var eDest = eDestination.innerHTML;
+  var eFreq = eFrequency.innerHTML;
+  
+  eTrainName.innerHTML   = "<input type='text' id='e_r"+num+"c0' value='"+eTrain+"'>";
+  eDestination.innerHTML = "<input type='text' id='e_r"+num+"c1' value='"+eDest+"'>";
+  eFrequency.innerHTML   = "<input type='text' id='e_r"+num+"c2' value='"+eFreq+"'>";
+ 
+}
+
+
+
+// =========================================================================================================================
+// SAVE TABLE ROW
+// =========================================================================================================================
+
+saveRow = function (num) {
+  
+  var sTrain = document.getElementById("e_r"+num+"c0").value;
+  var sDest  = document.getElementById("e_r"+num+"c1").value;
+  var sFreq  = document.getElementById("e_r"+num+"c2").value;
+  
+  document.getElementById("r"+num+"c0").innerHTML = sTrain;
+  document.getElementById("r"+num+"c1").innerHTML = sDest;
+  document.getElementById("r"+num+"c2").innerHTML = sFreq;
+
+}
+
+
+
+// =========================================================================================================================
+// DELETE TABLE ROW
+// =========================================================================================================================
+
+deleteRow = function (num) {
+
+  console.log("num:", num);
+
+  document.getElementById("tableId").deleteRow(num);
+
+}
+
+
+
+// =========================================================================================================================
+// UPDATE TRAIN SCHEDULE EACH MINUTE / UPDATE TIME DISPLAY EACH SECOND
+// =========================================================================================================================
+
+var minuteTimer;
+
+function updateSchedEachMinute() {
+
   for (var i = 0; i < train.length; i++){
   
     gFirstTrainTime = train[i].firstTrainTime;
     gFrequency = train[i].frequency;
 
-    console.log("gFirstTrainTime: ", gFirstTrainTime);
-    console.log("gFrequency: ", gFrequency);
-  
-    firstTrainToMinutes();
-    currentTimeToMinutes();
     nextArrivalCalculation();
   
-    console.log("nextArrivalTime: ", nextArrivalTime);
-    console.log("minutesAway: ", minutesAway);
-
-
-    $("#r"+i+"c4").html(nextArrivalTime);
-    $("#r"+i+"c5").html(minutesAway);
+    $("#r"+i+"c3").html(nextArrivalTime);
+    $("#r"+i+"c4").html(minutesAway);
 
 
   }
   
-
-    if( cTime > "24:00" ) {
-      clearInterval(timer);
-      return false;
-  }
 }
 
-timer = setInterval( updateTime, 60000 );
+minuteTimer = setInterval( updateSchedEachMinute, 60000 );
 
 
+// =========================================================================================================================
+// Function: Display current time formatted using Moment.js
+// =========================================================================================================================
+var secondTimer;
 
-
-    console.log(x + ":00");
-    x = x + 1;
+function updateTimeEachSecond() {
+  // Display current time using Moment.js
+  var currentTimeMilitary = moment();
+  var cTime = moment(currentTimeMilitary).format("HH:mm:ss");
+  $(".currentTime").html("<p>Current Time: "+cTime+"</p>");  // Current Time to UI
 }
+  secondTimer = setInterval( updateTimeEachSecond, 1000 );
+
+
+
+
+
+

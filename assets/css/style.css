@@ -58,11 +58,31 @@ body {
     font-weight: bolder;
 }
 
+#thAction {
+    text-align: center;
+}
+
 .card-header {
     font-size: 18px;
     font-weight: bolder;
-    background-color: rgb(226, 226, 226);
+    background-color: rgb(209, 209, 209);
 }
+
+.actionBtn {
+    vertical-align: text-top;
+    float: left;
+
+    color: white;
+    border-radius: 5px;
+    padding: 2px;
+
+    text-align: center;
+    text-decoration: none;
+    font-size: 12px;
+    background-color: rgb(85, 0, 135);
+}
+
+
 
 /* ============================================================================================================================== */
 /* Form for the input fields  */
