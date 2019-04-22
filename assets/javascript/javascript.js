@@ -21,22 +21,31 @@ var firebaseData = firebase.database();
 // Global Variables
 // =========================================================================================================================
 
-// Schedule variables
+// Used in Firebase pulls
 var gTrainName;
 var gDestination;
 var gFirstTrainTime;
 var gFrequency;
-
 var train = [];
-
-// Database variables
 var dbRecordCount = 0;
 
-// Time variables
+// Used in Firebase updates and deletes
+var keyId;
+var rowSaved;
+var rowDeleted;
+var sTrain;
+var sDest;
+var sFreq;
+
+// Used in Time calculations
+var cTime;
 var nextArrivalTime;
 var minutesAway;
 
-var cTime;
+// Used with Timers
+var minutesTimer;
+var secondsTimer;
+
 
 
 // =========================================================================================================================
@@ -102,7 +111,7 @@ firebaseData.ref().on("child_added", function(childSnapshot) {
         "<input type='button' class='actionBtn' id='eBtn_r"+dbRecordCount+"c"+5+"' onclick='editRow("+dbRecordCount+")' value='Edit'></td>" +
 
       "<td id='r"+dbRecordCount+"c"+6+"'>"+
-        "<input type='button' class='actionBtn' id='sBtn_r"+dbRecordCount+"c"+6+"' onclick='saveRow("+dbRecordCount+")' value='Save'></td>" + 
+        "<input type='button' class='actionBtn' id='sBtn_r"+dbRecordCount+"c"+6+"' onclick='saveRow("+dbRecordCount+")' style='display: none;' value='Save'></td>" + 
 
       "<td id='r"+dbRecordCount+"c"+7+"'>"+
         "<input type='button' class='actionBtn' id='dBtn_r"+dbRecordCount+"c"+7+"' onclick='deleteRow("+dbRecordCount+")' value='Delete'></td>" +
@@ -198,13 +207,13 @@ nextArrivalCalculation = function () {
 */
 }
 
-var keyId;
+
+
 // =========================================================================================================================
-// AN ACION BUTTON IS CLICKED: PUSH DATA TO FIREBASE REALTIME DATABASE
+// SAVE UPDATES TO FIREBASE REALTIME DATABASE
 // =========================================================================================================================
 
 editFirebase = function () {
-
   
   trainName = sTrain;
   destination = sDest;
@@ -226,7 +235,6 @@ editFirebase = function () {
     }
   }
 
-
   // Push user input to firebase database
   firebaseData.ref(keyId).update({
       trainName: trainName,
@@ -236,11 +244,8 @@ editFirebase = function () {
 
 };
 
-var rowSaved;
 
-var eTrain;
-var eDest;
-var eFreq;
+
 // =========================================================================================================================
 // EDIT TABLE ROW
 // =========================================================================================================================
@@ -259,11 +264,14 @@ editRow = function (num) {
   eDestination.innerHTML = "<input type='text' id='e_r"+num+"c1' value='"+eDest+"'>";
   eFrequency.innerHTML   = "<input type='text' id='e_r"+num+"c2' value='"+eFreq+"'>";
  
+
+  document.getElementById("eBtn_r"+num+"c5").style.display="none";
+  document.getElementById("sBtn_r"+num+"c6").style.display="block";
+
+
 }
 
-var sTrain;
-var sDest;
-var sFreq;
+
 
 // =========================================================================================================================
 // SAVE TABLE ROW
@@ -287,10 +295,17 @@ saveRow = function (num) {
   console.log("sFreq:", sFreq);
 
   editFirebase();
+  
+
+  document.getElementById("eBtn_r"+num+"c5").style.display="block";
+  document.getElementById("sBtn_r"+num+"c6").style.display="none";
+
+  location.reload();
+
 }
 
 
-var rowDeleted;
+
 // =========================================================================================================================
 // DELETE TABLE ROW
 // =========================================================================================================================
@@ -316,7 +331,6 @@ deleteRow = function (num) {
   // Push user input to firebase database
   firebaseData.ref(keyId).remove();
 
-
 }
 
 
@@ -325,7 +339,6 @@ deleteRow = function (num) {
 // UPDATE TRAIN SCHEDULE EACH MINUTE / UPDATE TIME DISPLAY EACH SECOND
 // =========================================================================================================================
 
-var minuteTimer;
 
 function updateSchedEachMinute() {
 
@@ -341,13 +354,13 @@ function updateSchedEachMinute() {
   }
 }
 
-minuteTimer = setInterval( updateSchedEachMinute, 60000 );
+minutesTimer = setInterval( updateSchedEachMinute, 60000 );
 
 
 // =========================================================================================================================
 // Function: Display current time formatted using Moment.js
 // =========================================================================================================================
-var secondTimer;
+
 
 function updateTimeEachSecond() {
   // Display current time using Moment.js
@@ -355,10 +368,4 @@ function updateTimeEachSecond() {
   var cTime = moment(currentTimeMilitary).format("HH:mm:ss");
   $(".currentTime").html("<p>Current Time: "+cTime+"</p>");  // Current Time to UI
 }
-  secondTimer = setInterval( updateTimeEachSecond, 1000 );
-
-
-
-
-
-
+  secondsTimer = setInterval( updateTimeEachSecond, 1000 );

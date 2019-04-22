@@ -12,7 +12,6 @@ body {
     background-repeat: no-repeat;
     background-size: cover;
     color: black;
-    
     }
 
 /* ============================================================================================================================== */
@@ -33,21 +32,17 @@ body {
     color: rgb(85, 0, 135);
     font-size: 16px;
     background-color: rgb(209, 209, 209);
-
-
-    
 }
 
 #h4header {
 
     background-color: rgb(85, 0, 135);
     margin-bottom: 30px;
-    
 }
 
 
 /* ============================================================================================================================== */
-/* Card that holds the Train Schedule  */
+/* Card that holds the Train Schedule tabl  */
 /* ============================================================================================================================== */
 
 .card {
@@ -68,6 +63,7 @@ body {
     background-color: rgb(209, 209, 209);
 }
 
+/* Action buttons created in the train schedule table */
 .actionBtn {
     vertical-align: text-top;
     float: left;
@@ -81,7 +77,6 @@ body {
     font-size: 12px;
     background-color: rgb(85, 0, 135);
 }
-
 
 
 /* ============================================================================================================================== */
