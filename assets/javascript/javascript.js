@@ -26,7 +26,6 @@ var gTrainName;
 var gDestination;
 var gFirstTrainTime;
 var gFrequency;
-var gLastTrainTime;
 
 var train = [];
 
@@ -40,11 +39,10 @@ var minutesAway;
 var cTime;
 
 
-
 // =========================================================================================================================
 // SUBMIT BUTTON CLICKED: PUSH DATA TO FIREBASE REALTIME DATABASE
 // =========================================================================================================================
- 
+
 $(".btn-primary").on("click", function(event) {
   event.preventDefault();
 
@@ -55,7 +53,6 @@ $(".btn-primary").on("click", function(event) {
   var destination = $("#formGroupDestination").val().trim();
   var firstTrainTime = $("#formGroupFirstTrainTime").val().trim();
   var frequency = $("#formGroupFrequency").val().trim();
-  var lastTrainTime = $("#formGroupLastTrainTime").val().trim();
   
   // Push user input to firebase database
   firebaseData.ref().push({
@@ -63,9 +60,12 @@ $(".btn-primary").on("click", function(event) {
       destination: destination,
       firstTrainTime: firstTrainTime,
       frequency: frequency,
-      lastTrainTime: lastTrainTime,
       dateAdded: firebase.database.ServerValue.TIMESTAMP
   });
+
+  // Clear input fields
+  document.getElementById("myForm").reset();
+
 });
 
 
@@ -76,13 +76,17 @@ $(".btn-primary").on("click", function(event) {
 
 firebaseData.ref().on("child_added", function(childSnapshot) {
 
-  console.log("Number of records in Firebase: "+childSnapshot.numChildren());
+  //console.log("Number of records in Firebase: "+childSnapshot.numChildren());
+  //console.log("childSnapshot.val(): ", childSnapshot.val()); // gives field details
 
   // Data from Firebase
   gTrainName = childSnapshot.val().trainName;
   gDestination = childSnapshot.val().destination;
   gFirstTrainTime = childSnapshot.val().firstTrainTime;
   gFrequency = childSnapshot.val().frequency;
+  
+  var recordKeyId = childSnapshot.key;
+  //console.log("recordKeyId: ", recordKeyId);
   
   nextArrivalCalculation();
 
@@ -110,10 +114,13 @@ firebaseData.ref().on("child_added", function(childSnapshot) {
                   firstTrainTime: gFirstTrainTime, 
                   frequency: gFrequency,
                   nextArrivalTime: nextArrivalTime, 
-                  minutesAway: minutesAway 
+                  minutesAway: minutesAway,
+                  recordKeyId: recordKeyId
   });
 
   dbRecordCount++;
+
+  //console.log("train:",train);
  
   // Error Handler
   }, function(errorObject) {
@@ -191,8 +198,49 @@ nextArrivalCalculation = function () {
 */
 }
 
+var keyId;
+// =========================================================================================================================
+// AN ACION BUTTON IS CLICKED: PUSH DATA TO FIREBASE REALTIME DATABASE
+// =========================================================================================================================
+
+editFirebase = function () {
+
+  
+  trainName = sTrain;
+  destination = sDest;
+  frequency =  sFreq;
+
+  console.log("trainName", trainName);
+  console.log("destination", destination);
+  console.log("frequency", frequency);
 
 
+  for(var i = 0; i < dbRecordCount; i++) {
+
+    if(train[i].record === rowSaved) {
+      keyId = train[i].recordKeyId;
+
+      console.log("rowSaved", rowSaved);
+      console.log("train[i].record", train[i].record);
+      console.log("keyId", keyId);
+    }
+  }
+
+
+  // Push user input to firebase database
+  firebaseData.ref(keyId).update({
+      trainName: trainName,
+      destination: destination,
+      frequency: frequency
+  });
+
+};
+
+var rowSaved;
+
+var eTrain;
+var eDest;
+var eFreq;
 // =========================================================================================================================
 // EDIT TABLE ROW
 // =========================================================================================================================
@@ -203,9 +251,9 @@ editRow = function (num) {
   var eDestination = document.getElementById("r"+num+"c1");
   var eFrequency = document.getElementById("r"+num+"c2");
   
-  var eTrain = eTrainName.innerHTML;
-  var eDest = eDestination.innerHTML;
-  var eFreq = eFrequency.innerHTML;
+  eTrain = eTrainName.innerHTML;
+  eDest = eDestination.innerHTML;
+  eFreq = eFrequency.innerHTML;
   
   eTrainName.innerHTML   = "<input type='text' id='e_r"+num+"c0' value='"+eTrain+"'>";
   eDestination.innerHTML = "<input type='text' id='e_r"+num+"c1' value='"+eDest+"'>";
@@ -213,7 +261,9 @@ editRow = function (num) {
  
 }
 
-
+var sTrain;
+var sDest;
+var sFreq;
 
 // =========================================================================================================================
 // SAVE TABLE ROW
@@ -221,27 +271,51 @@ editRow = function (num) {
 
 saveRow = function (num) {
   
-  var sTrain = document.getElementById("e_r"+num+"c0").value;
-  var sDest  = document.getElementById("e_r"+num+"c1").value;
-  var sFreq  = document.getElementById("e_r"+num+"c2").value;
+  sTrain = document.getElementById("e_r"+num+"c0").value;
+  sDest  = document.getElementById("e_r"+num+"c1").value;
+  sFreq  = document.getElementById("e_r"+num+"c2").value;
   
   document.getElementById("r"+num+"c0").innerHTML = sTrain;
   document.getElementById("r"+num+"c1").innerHTML = sDest;
   document.getElementById("r"+num+"c2").innerHTML = sFreq;
 
+  rowSaved = num;
+
+  console.log("rowSaved:", rowSaved);
+  console.log("sTrain:", sTrain);
+  console.log("sDest:", sDest);
+  console.log("sFreq:", sFreq);
+
+  editFirebase();
 }
 
 
-
+var rowDeleted;
 // =========================================================================================================================
 // DELETE TABLE ROW
 // =========================================================================================================================
 
 deleteRow = function (num) {
-
-  console.log("num:", num);
-
+  rowDeleted = num;
+  
+  console.log("rowDeleted:", rowDeleted);
   document.getElementById("tableId").deleteRow(num);
+
+
+  for(var i = 0; i < dbRecordCount; i++) {
+
+    if(train[i].record === rowDeleted) {
+      keyId = train[i].recordKeyId;
+
+      console.log("rowDeleted", rowDeleted);
+      console.log("train[i].record", train[i].record);
+      console.log("keyId", keyId);
+    }
+  }
+
+  // Push user input to firebase database
+  firebaseData.ref(keyId).remove();
+
 
 }
 
@@ -264,10 +338,7 @@ function updateSchedEachMinute() {
   
     $("#r"+i+"c3").html(nextArrivalTime);
     $("#r"+i+"c4").html(minutesAway);
-
-
   }
-  
 }
 
 minuteTimer = setInterval( updateSchedEachMinute, 60000 );
